@@ -1,0 +1,36 @@
+{
+  "apis": [
+    {
+      "id": "odoo",
+      "name": "Odoo ERP",
+      "service": "Odoo",
+      "status": "conectada",
+      "lastSync": "2026-04-28T06:00:00",
+      "endpoint": "https://unionx.odoo.com/jsonrpc",
+      "description": "ERP principal. Fuente de datos de ventas, inventario y finanzas para las marcas.",
+      "usedBy": ["Lhotse", "Simplit", "Dynamo TL", "T-Care", "UMA"],
+      "category": "erp"
+    },
+    {
+      "id": "claude-api",
+      "name": "Claude API (Anthropic)",
+      "service": "Anthropic",
+      "status": "conectada",
+      "lastSync": "2026-04-28",
+      "endpoint": "https://api.anthropic.com",
+      "description": "API de Claude para automatizaciones de IA, generación de reportes y skills.",
+      "usedBy": ["Skills", "Automatizaciones", "Reportes"],
+      "category": "ai"
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive",
+      "service": "Google",
+      "status": "conectada",
+      "lastSync": "2026-04-28",
+      "description": "Almacenamiento de reportes, presentaciones y archivos de trabajo.",
+      "usedBy": ["Todas las marcas"],
+      "category": "storage"
+    }
+  ]
+}

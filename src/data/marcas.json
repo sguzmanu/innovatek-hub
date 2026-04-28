@@ -1,0 +1,153 @@
+{
+  "brands": [
+    {
+      "slug": "lhotse",
+      "name": "Lhotse",
+      "description": "Marca de ropa técnica y outdoor de alta montaña",
+      "category": "Indumentaria Técnica",
+      "status": "activa",
+      "health": "bueno",
+      "healthScore": 72,
+      "color": "#1E40AF",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": true,
+      "odooModel": "product.template",
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "simplit",
+      "name": "Simplit",
+      "description": "Soluciones de organización y simplificación para el hogar y oficina",
+      "category": "Hogar & Organización",
+      "status": "activa",
+      "health": "bueno",
+      "healthScore": 68,
+      "color": "#059669",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": true,
+      "odooModel": "product.template",
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "levo",
+      "name": "Levo",
+      "description": "Movilidad eléctrica urbana y accesorios",
+      "category": "Movilidad",
+      "status": "activa",
+      "health": "regular",
+      "healthScore": 55,
+      "color": "#7C3AED",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": false,
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "dynamo-tl",
+      "name": "Dynamo TL",
+      "description": "Herramientas y equipamiento para trabajo en terreno",
+      "category": "Herramientas",
+      "status": "activa",
+      "health": "bueno",
+      "healthScore": 70,
+      "color": "#D97706",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": true,
+      "odooModel": "product.template",
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "t-care",
+      "name": "T-Care",
+      "description": "Cuidado personal y bienestar con ingredientes naturales",
+      "category": "Cuidado Personal",
+      "status": "activa",
+      "health": "excelente",
+      "healthScore": 85,
+      "color": "#DB2777",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": true,
+      "odooModel": "product.template",
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "bandu",
+      "name": "Bandú",
+      "description": "Accesorios y moda con identidad latinoamericana",
+      "category": "Moda & Accesorios",
+      "status": "activa",
+      "health": "regular",
+      "healthScore": 58,
+      "color": "#EA580C",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": false,
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "xroad",
+      "name": "Xroad",
+      "description": "Equipamiento y accesorios para aventura y exploración",
+      "category": "Aventura",
+      "status": "en_desarrollo",
+      "health": "regular",
+      "healthScore": 45,
+      "color": "#0F766E",
+      "lastReport": null,
+      "nextReview": "2026-06-30",
+      "odooConnected": false,
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    },
+    {
+      "slug": "uma",
+      "name": "UMA",
+      "description": "Moda urbana contemporánea con diseño minimalista",
+      "category": "Moda Urbana",
+      "status": "activa",
+      "health": "bueno",
+      "healthScore": 74,
+      "color": "#4338CA",
+      "lastReport": "2026-03-31",
+      "nextReview": "2026-06-30",
+      "odooConnected": true,
+      "odooModel": "product.template",
+      "kpis": {
+        "ventas": 0,
+        "meta": 0,
+        "crecimiento": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "skills": [
+    {
+      "id": "reporte-marcas-propias",
+      "name": "Reporte Marcas Propias",
+      "description": "Genera el Reporte Trimestral de Marcas Propias de UnionX (.pptx) a partir del archivo Excel de ventas",
+      "version": "1.0.0",
+      "category": "marca",
+      "createdAt": "2026-04-01",
+      "updatedAt": "2026-04-28",
+      "active": true,
+      "tags": ["pptx", "excel", "ventas", "trimestral", "marcas"]
+    },
+    {
+      "id": "unionx-pptx",
+      "name": "UnionX PPTX",
+      "description": "Crea presentaciones PowerPoint empresariales para UnionX y sus marcas",
+      "version": "1.0.0",
+      "category": "diseño",
+      "createdAt": "2026-03-15",
+      "updatedAt": "2026-04-20",
+      "active": true,
+      "tags": ["pptx", "presentaciones", "diseño", "unionx"]
+    },
+    {
+      "id": "frontend-design",
+      "name": "Frontend Design",
+      "description": "Crea interfaces frontend distintivas con alto criterio de diseño. Plugin oficial de Anthropic.",
+      "version": "latest",
+      "category": "diseño",
+      "createdAt": "2026-04-28",
+      "updatedAt": "2026-04-28",
+      "active": false,
+      "tags": ["ui", "ux", "nextjs", "react", "tailwind"]
+    }
+  ]
+}

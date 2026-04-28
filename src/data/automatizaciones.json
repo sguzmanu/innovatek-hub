@@ -1,0 +1,28 @@
+{
+  "automations": [
+    {
+      "id": "reporte-semanal",
+      "name": "Reporte Semanal de Marcas",
+      "description": "Genera automáticamente un resumen semanal de KPIs de todas las marcas",
+      "trigger": "Cada lunes a las 8:00 AM",
+      "frequency": "Semanal",
+      "status": "activa",
+      "lastRun": "2026-04-21",
+      "nextRun": "2026-04-28",
+      "tool": "Claude Code + Skill",
+      "category": "Reportes"
+    },
+    {
+      "id": "sync-odoo",
+      "name": "Sync Ventas Odoo",
+      "description": "Sincroniza datos de ventas desde Odoo para actualizar KPIs del hub",
+      "trigger": "Cada día a las 6:00 AM",
+      "frequency": "Diaria",
+      "status": "activa",
+      "lastRun": "2026-04-28",
+      "nextRun": "2026-04-29",
+      "tool": "Odoo API",
+      "category": "Integración"
+    }
+  ]
+}
