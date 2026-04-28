@@ -11,7 +11,7 @@
       "color": "#1E40AF",
       "lastReport": "2026-03-31",
       "nextReview": "2026-06-30",
-      "odooConnected": true,h
+      "odooConnected": true,
       "odooModel": "product.template",
       "kpis": {
         "ventas": 0,
