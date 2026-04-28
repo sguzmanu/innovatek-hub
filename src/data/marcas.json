@@ -11,7 +11,7 @@
       "color": "#1E40AF",
       "lastReport": "2026-03-31",
       "nextReview": "2026-06-30",
-      "odooConnected": true,
+      "odooConnected": true,h
       "odooModel": "product.template",
       "kpis": {
         "ventas": 0,
@@ -117,7 +117,7 @@
       "name": "Xroad",
       "description": "Equipamiento y accesorios para aventura y exploración",
       "category": "Aventura",
-      "status": "en_desarrollo",
+      "status": "activa",
       "health": "regular",
       "healthScore": 45,
       "color": "#0F766E",
