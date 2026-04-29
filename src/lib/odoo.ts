@@ -131,6 +131,8 @@ export type OdooProductDetail = {
   qty_available: number
   unidadesMes: number
   unidadesAnio: number
+  ventasMes: number
+  ventasAnio: number
 }
 
 /** Full brand detail: products with sales per SKU + monthly units — single Odoo session. */
@@ -161,11 +163,11 @@ export async function getBrandDetailData(slug: string): Promise<{
       { fields: ['id', 'name', 'default_code', 'categ_id', 'qty_available'], limit: 500, order: 'categ_id asc, name asc' }
     ),
     callKw(session, 'sale.order.line', 'read_group',
-      [yearDomain, ['product_uom_qty:sum'], ['product_id']],
+      [yearDomain, ['product_uom_qty:sum', 'price_subtotal:sum'], ['product_id']],
       { lazy: false }
     ),
     callKw(session, 'sale.order.line', 'read_group',
-      [monthDomain, ['product_uom_qty:sum'], ['product_id']],
+      [monthDomain, ['product_uom_qty:sum', 'price_subtotal:sum'], ['product_id']],
       { lazy: false }
     ),
     callKw(session, 'sale.order.line', 'read_group',
@@ -178,8 +180,8 @@ export async function getBrandDetailData(slug: string): Promise<{
     ),
   ]) as [
     Array<{ id: number; name: string; default_code: string | false; categ_id: [number, string]; qty_available: number }>,
-    Array<{ product_id: [number, string]; product_uom_qty: number }>,
-    Array<{ product_id: [number, string]; product_uom_qty: number }>,
+    Array<{ product_id: [number, string]; product_uom_qty: number; price_subtotal: number }>,
+    Array<{ product_id: [number, string]; product_uom_qty: number; price_subtotal: number }>,
     Array<{ create_date: string; product_uom_qty: number }>,
     Array<{ price_subtotal: number; product_uom_qty: number }>,
   ]
@@ -200,15 +202,23 @@ export async function getBrandDetailData(slug: string): Promise<{
   }
 
   // Aggregate variant-level sales to template level (year + month)
-  const yearByTemplate: Record<number, number> = {}
+  const yearUnits: Record<number, number> = {}
+  const yearCLP: Record<number, number> = {}
   for (const row of salesYearRaw) {
     const tmplId = variantToTemplate[row.product_id[0]]
-    if (tmplId) yearByTemplate[tmplId] = (yearByTemplate[tmplId] ?? 0) + row.product_uom_qty
+    if (tmplId) {
+      yearUnits[tmplId] = (yearUnits[tmplId] ?? 0) + row.product_uom_qty
+      yearCLP[tmplId] = (yearCLP[tmplId] ?? 0) + row.price_subtotal
+    }
   }
-  const monthByTemplate: Record<number, number> = {}
+  const monthUnits: Record<number, number> = {}
+  const monthCLP: Record<number, number> = {}
   for (const row of salesMonthRaw) {
     const tmplId = variantToTemplate[row.product_id[0]]
-    if (tmplId) monthByTemplate[tmplId] = (monthByTemplate[tmplId] ?? 0) + row.product_uom_qty
+    if (tmplId) {
+      monthUnits[tmplId] = (monthUnits[tmplId] ?? 0) + row.product_uom_qty
+      monthCLP[tmplId] = (monthCLP[tmplId] ?? 0) + row.price_subtotal
+    }
   }
 
   const products: OdooProductDetail[] = templates.map(t => ({
@@ -217,8 +227,10 @@ export async function getBrandDetailData(slug: string): Promise<{
     default_code: t.default_code,
     categ_id: t.categ_id,
     qty_available: t.qty_available,
-    unidadesMes: Math.round(monthByTemplate[t.id] ?? 0),
-    unidadesAnio: Math.round(yearByTemplate[t.id] ?? 0),
+    unidadesMes: Math.round(monthUnits[t.id] ?? 0),
+    unidadesAnio: Math.round(yearUnits[t.id] ?? 0),
+    ventasMes: Math.round(monthCLP[t.id] ?? 0),
+    ventasAnio: Math.round(yearCLP[t.id] ?? 0),
   }))
 
   // Parse monthly units — create_date:month returns "YYYY-MM-DD HH:MM:SS" start-of-month

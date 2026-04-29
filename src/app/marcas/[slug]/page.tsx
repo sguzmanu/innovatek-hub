@@ -160,7 +160,9 @@ export default async function BrandPage({ params }: PageProps) {
                         <th className="text-left pb-2 pr-4 font-medium">SKU</th>
                         <th className="text-right pb-2 pr-4 font-medium">Stock</th>
                         <th className="text-right pb-2 pr-4 font-medium">Und. mes</th>
-                        <th className="text-right pb-2 font-medium">Und. año ↓</th>
+                        <th className="text-right pb-2 pr-4 font-medium">$ mes</th>
+                        <th className="text-right pb-2 pr-4 font-medium">Und. año ↓</th>
+                        <th className="text-right pb-2 font-medium">$ año</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -183,10 +185,16 @@ export default async function BrandPage({ params }: PageProps) {
                               ? p.unidadesMes.toLocaleString('es-CL')
                               : <span className="text-muted-foreground/40">0</span>}
                           </td>
-                          <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                          <td className="py-1.5 pr-4 text-right tabular-nums text-emerald-700 font-medium">
+                            {p.ventasMes > 0 ? formatCLP(p.ventasMes) : <span className="text-muted-foreground/40">—</span>}
+                          </td>
+                          <td className="py-1.5 pr-4 text-right tabular-nums text-muted-foreground">
                             {p.unidadesAnio > 0
                               ? p.unidadesAnio.toLocaleString('es-CL')
                               : <span className="text-muted-foreground/40">0</span>}
+                          </td>
+                          <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                            {p.ventasAnio > 0 ? formatCLP(p.ventasAnio) : <span className="text-muted-foreground/40">—</span>}
                           </td>
                         </tr>
                       ))}
