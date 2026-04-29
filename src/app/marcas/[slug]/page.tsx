@@ -172,7 +172,8 @@ export default async function BrandPage({ params }: PageProps) {
                             <th className="text-left pb-2 pr-4 font-medium">Producto</th>
                             <th className="text-left pb-2 pr-4 font-medium">SKU</th>
                             <th className="text-right pb-2 pr-4 font-medium">Stock</th>
-                            <th className="text-right pb-2 font-medium">Und. vendidas</th>
+                            <th className="text-right pb-2 pr-4 font-medium">Und. mes</th>
+                            <th className="text-right pb-2 font-medium">Und. año</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -187,10 +188,15 @@ export default async function BrandPage({ params }: PageProps) {
                               }`}>
                                 {p.qty_available.toLocaleString('es-CL')}
                               </td>
+                              <td className="py-1.5 pr-4 text-right tabular-nums font-semibold">
+                                {p.unidadesMes > 0
+                                  ? p.unidadesMes.toLocaleString('es-CL')
+                                  : <span className="text-muted-foreground/40">0</span>}
+                              </td>
                               <td className="py-1.5 text-right tabular-nums text-muted-foreground">
-                                {p.unidadesVendidas > 0
-                                  ? p.unidadesVendidas.toLocaleString('es-CL')
-                                  : <span className="text-red-400">0</span>}
+                                {p.unidadesAnio > 0
+                                  ? p.unidadesAnio.toLocaleString('es-CL')
+                                  : <span className="text-muted-foreground/40">0</span>}
                               </td>
                             </tr>
                           ))}
