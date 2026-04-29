@@ -3,12 +3,24 @@ const ODOO_DB = process.env.ODOO_DB!
 const ODOO_USER = process.env.ODOO_USER!
 const ODOO_PASSWORD = process.env.ODOO_PASSWORD!
 
-// Maps hub brand slugs → Odoo category name fragment
+// Maps hub brand slugs → Odoo product.brand.mv ID
+export const BRAND_ID: Record<string, number> = {
+  'lhotse':   93,
+  'simplit':  166,
+  'levo':     92,
+  'dynamo-tl': 37,
+  't-care':   224,
+  'bandu':    217,
+  'xroad':    212,
+  'uma':      227,
+}
+
+// Keep for any callers that still reference the old map
 export const BRAND_CATEGORY: Record<string, string> = {
   'lhotse': 'Lhotse',
   'simplit': 'Simplit',
   'levo': 'Levo',
-  'dynamo-tl': 'Dynamo',
+  'dynamo-tl': 'Dynamo TL',
   't-care': 'T-Care',
   'bandu': 'Bandú',
   'xroad': 'Xroad',

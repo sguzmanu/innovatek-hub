@@ -9,7 +9,7 @@ import { PlugZap, FileText, Target, ClipboardCheck, TrendingUp, AlertCircle, Che
 import type { Brand } from "@/lib/types"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { BRAND_CATEGORY } from "@/lib/odoo"
+import { BRAND_ID, BRAND_CATEGORY } from "@/lib/odoo"
 
 export const revalidate = 3600
 
@@ -42,7 +42,7 @@ type OdooProduct = {
 type VentasData = {
   totalVentas: number
   totalUnidades: number
-  byMonth: Array<{ 'order_id.date_order': string; price_subtotal: number }>
+  byMonth?: Array<{ 'order_id.date_order': string; price_subtotal: number }>
   error?: string
 }
 
@@ -81,7 +81,7 @@ export default async function BrandPage({ params }: PageProps) {
   const brand = brandsData.brands.find((b) => b.slug === slug) as Brand | undefined
   if (!brand) notFound()
 
-  const hasOdooMapping = !!BRAND_CATEGORY[slug]
+  const hasOdooMapping = !!BRAND_ID[slug]
   const { productos, ventas, odooAvailable } = hasOdooMapping
     ? await fetchOdooData(slug)
     : { productos: [], ventas: null, odooAvailable: false }
@@ -236,7 +236,7 @@ export default async function BrandPage({ params }: PageProps) {
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                   {!odooAvailable
                     ? 'Verifica las variables de entorno ODOO_URL, ODOO_DB, ODOO_USER y ODOO_PASSWORD en Vercel.'
-                    : `No se encontraron productos con categoría que contenga "${BRAND_CATEGORY[slug]}".`}
+                    : `No se encontraron productos activos para ${BRAND_CATEGORY[slug]} en Odoo.`}
                 </p>
               </CardContent>
             </Card>
