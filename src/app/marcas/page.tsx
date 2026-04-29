@@ -7,7 +7,7 @@ import { ArrowRight, PlugZap, TrendingUp } from "lucide-react"
 import type { Brand } from "@/lib/types"
 import { getAllBrandsMonthSales, BRAND_ID } from "@/lib/odoo"
 
-export const revalidate = 1800 // refresca cada 30 min
+export const revalidate = 300 // refresca cada 5 min
 
 const healthColors: Record<string, string> = {
   excelente: "text-emerald-600",

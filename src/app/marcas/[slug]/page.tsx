@@ -5,13 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import brandsData from "@/data/marcas.json"
-import { PlugZap, FileText, Target, ClipboardCheck, TrendingUp, AlertCircle, CheckCircle2, Package } from "lucide-react"
+import { PlugZap, FileText, Target, ClipboardCheck, TrendingUp, AlertCircle, Package } from "lucide-react"
 import type { Brand } from "@/lib/types"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { BRAND_ID, BRAND_CATEGORY, odooSearchRead, odooReadGroup, currentYearStart } from "@/lib/odoo"
+import { BRAND_ID, BRAND_CATEGORY, getBrandDetailData } from "@/lib/odoo"
 
-export const revalidate = 1800
+export const revalidate = 300
 
 const healthColors: Record<string, string> = {
   excelente: "text-emerald-600",
@@ -29,60 +29,10 @@ export async function generateStaticParams() {
   return brandsData.brands.map((b) => ({ slug: b.slug }))
 }
 
-type OdooProduct = {
-  id: number
-  name: string
-  default_code: string | false
-  categ_id: [number, string]
-  list_price: number
-  qty_available: number
-  type: string
-}
-
-type VentasData = {
-  totalVentas: number
-  totalUnidades: number
-  byMonth?: Array<{ 'order_id.date_order': string; price_subtotal: number }>
-  error?: string
-}
-
-async function fetchOdooData(slug: string): Promise<{
-  productos: OdooProduct[]
-  ventas: VentasData | null
-  odooAvailable: boolean
-}> {
-  const brandId = BRAND_ID[slug]
-  try {
-    const [productos, ventasResult] = await Promise.all([
-      odooSearchRead(
-        'product.template',
-        [['active', '=', true], ['brand_id', '=', brandId], ['sale_ok', '=', true]],
-        ['id', 'name', 'default_code', 'categ_id', 'list_price', 'qty_available', 'type'],
-        { limit: 500, order: 'categ_id asc, name asc' }
-      ),
-      odooReadGroup(
-        'sale.order.line',
-        [
-          ['order_id.state', 'in', ['sale', 'done']],
-          ['order_id.date_order', '>=', currentYearStart()],
-          ['product_id.product_tmpl_id.brand_id', '=', brandId],
-        ],
-        ['price_subtotal:sum', 'product_uom_qty:sum'],
-        []
-      ),
-    ])
-    const row = ventasResult?.[0] ?? {}
-    return {
-      productos: productos ?? [],
-      ventas: { totalVentas: row['price_subtotal'] ?? 0, totalUnidades: row['product_uom_qty'] ?? 0 },
-      odooAvailable: true,
-    }
-  } catch {
-    return { productos: [], ventas: null, odooAvailable: false }
-  }
-}
-
 function formatCLP(n: number) {
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -91,18 +41,33 @@ export default async function BrandPage({ params }: PageProps) {
   const brand = brandsData.brands.find((b) => b.slug === slug) as Brand | undefined
   if (!brand) notFound()
 
-  const hasOdooMapping = !!BRAND_ID[slug]
-  const { productos, ventas, odooAvailable } = hasOdooMapping
-    ? await fetchOdooData(slug)
-    : { productos: [], ventas: null, odooAvailable: false }
+  const hasOdoo = !!BRAND_ID[slug]
+  let products: Awaited<ReturnType<typeof getBrandDetailData>>['products'] = []
+  let monthlyUnits: Awaited<ReturnType<typeof getBrandDetailData>>['monthlyUnits'] = []
+  let yearTotal = { ventas: 0, unidades: 0 }
+  let odooAvailable = false
 
-  // Group products by category
-  const byCategory: Record<string, OdooProduct[]> = {}
-  for (const p of productos) {
+  if (hasOdoo) {
+    try {
+      const data = await getBrandDetailData(slug)
+      products = data.products
+      monthlyUnits = data.monthlyUnits
+      yearTotal = data.yearTotal
+      odooAvailable = true
+    } catch {
+      // degrade silently
+    }
+  }
+
+  // Group products by Odoo category
+  const byCategory: Record<string, typeof products> = {}
+  for (const p of products) {
     const cat = p.categ_id?.[1] ?? 'Sin categoría'
     if (!byCategory[cat]) byCategory[cat] = []
     byCategory[cat].push(p)
   }
+
+  const maxMonthUnits = Math.max(...monthlyUnits.map(m => m.units), 1)
 
   return (
     <div>
@@ -142,9 +107,7 @@ export default async function BrandPage({ params }: PageProps) {
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground mb-1">SKUs activos</p>
-            <p className="text-2xl font-semibold">
-              {odooAvailable ? productos.length : '—'}
-            </p>
+            <p className="text-2xl font-semibold">{odooAvailable ? products.length : '—'}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {odooAvailable ? `${Object.keys(byCategory).length} categorías` : 'Sin datos Odoo'}
             </p>
@@ -153,11 +116,9 @@ export default async function BrandPage({ params }: PageProps) {
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground mb-1">Ventas {new Date().getFullYear()}</p>
-            <p className="text-lg font-semibold">
-              {ventas && !ventas.error ? formatCLP(ventas.totalVentas) : '—'}
-            </p>
+            <p className="text-lg font-semibold">{odooAvailable ? formatCLP(yearTotal.ventas) : '—'}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {ventas && !ventas.error ? `${ventas.totalUnidades.toLocaleString('es-CL')} unidades` : 'Sin datos Odoo'}
+              {odooAvailable ? `${yearTotal.unidades.toLocaleString('es-CL')} unidades` : 'Sin datos Odoo'}
             </p>
           </CardContent>
         </Card>
@@ -165,7 +126,7 @@ export default async function BrandPage({ params }: PageProps) {
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground mb-1">Próxima revisión</p>
             <p className="text-lg font-semibold">
-              {brand.nextReview ? new Date(brand.nextReview).toLocaleDateString("es-CL", { month: "short", year: "numeric" }) : "—"}
+              {brand.nextReview ? new Date(brand.nextReview).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' }) : '—'}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">Revisión trimestral</p>
           </CardContent>
@@ -177,6 +138,9 @@ export default async function BrandPage({ params }: PageProps) {
           <TabsTrigger value="productos" className="flex items-center gap-1.5">
             <Package className="h-3.5 w-3.5" /> Productos
           </TabsTrigger>
+          <TabsTrigger value="ventas" className="flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" /> Ventas por mes
+          </TabsTrigger>
           <TabsTrigger value="informes" className="flex items-center gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Informes
           </TabsTrigger>
@@ -186,14 +150,11 @@ export default async function BrandPage({ params }: PageProps) {
           <TabsTrigger value="auditorias" className="flex items-center gap-1.5">
             <ClipboardCheck className="h-3.5 w-3.5" /> Auditorías
           </TabsTrigger>
-          <TabsTrigger value="odoo" className="flex items-center gap-1.5">
-            <TrendingUp className="h-3.5 w-3.5" /> Ventas Odoo
-          </TabsTrigger>
         </TabsList>
 
         {/* PRODUCTOS */}
         <TabsContent value="productos">
-          {odooAvailable && productos.length > 0 ? (
+          {odooAvailable && products.length > 0 ? (
             <div className="space-y-4">
               {Object.entries(byCategory).map(([cat, prods]) => (
                 <Card key={cat} className="border-0 shadow-sm">
@@ -211,21 +172,25 @@ export default async function BrandPage({ params }: PageProps) {
                             <th className="text-left pb-2 pr-4 font-medium">Producto</th>
                             <th className="text-left pb-2 pr-4 font-medium">SKU</th>
                             <th className="text-right pb-2 pr-4 font-medium">Stock</th>
-                            <th className="text-right pb-2 font-medium">Precio lista</th>
+                            <th className="text-right pb-2 font-medium">Und. vendidas</th>
                           </tr>
                         </thead>
                         <tbody>
                           {prods.map((p) => (
-                            <tr key={p.id} className="border-b border-border/50 last:border-0">
+                            <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
                               <td className="py-1.5 pr-4 font-medium">{p.name}</td>
-                              <td className="py-1.5 pr-4 text-muted-foreground font-mono">
+                              <td className="py-1.5 pr-4 text-muted-foreground font-mono text-[11px]">
                                 {p.default_code || '—'}
                               </td>
-                              <td className={`py-1.5 pr-4 text-right tabular-nums ${p.qty_available <= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                              <td className={`py-1.5 pr-4 text-right tabular-nums font-medium ${
+                                p.qty_available <= 0 ? 'text-red-500' : p.qty_available < 5 ? 'text-amber-500' : 'text-emerald-600'
+                              }`}>
                                 {p.qty_available.toLocaleString('es-CL')}
                               </td>
-                              <td className="py-1.5 text-right tabular-nums">
-                                {formatCLP(p.list_price)}
+                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                                {p.unidadesVendidas > 0
+                                  ? p.unidadesVendidas.toLocaleString('es-CL')
+                                  : <span className="text-red-400">0</span>}
                               </td>
                             </tr>
                           ))}
@@ -238,76 +203,74 @@ export default async function BrandPage({ params }: PageProps) {
             </div>
           ) : (
             <Card className="border-0 shadow-sm">
-              <CardContent className="pt-5 flex flex-col items-center justify-center py-16 text-center">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <Package className="h-10 w-10 text-muted-foreground mb-3" />
                 <p className="text-sm font-medium text-muted-foreground">
-                  {odooAvailable ? 'Sin productos encontrados en Odoo' : 'Odoo no disponible'}
+                  {odooAvailable ? 'Sin productos encontrados' : 'Odoo no disponible'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  {!odooAvailable
-                    ? 'Verifica las variables de entorno ODOO_URL, ODOO_DB, ODOO_USER y ODOO_PASSWORD en Vercel.'
-                    : `No se encontraron productos activos para ${BRAND_CATEGORY[slug]} en Odoo.`}
+                  {odooAvailable
+                    ? `No se encontraron productos activos para ${BRAND_CATEGORY[slug]}.`
+                    : 'Verifica las variables de entorno ODOO_* en Vercel.'}
                 </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
-        {/* VENTAS ODOO */}
-        <TabsContent value="odoo">
+        {/* VENTAS POR MES */}
+        <TabsContent value="ventas">
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold">Ventas {new Date().getFullYear()} — {brand.name}</CardTitle>
+              <CardTitle className="text-sm font-semibold">
+                Unidades vendidas por mes · {new Date().getFullYear()} · {brand.name}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {ventas && !ventas.error ? (
+              {odooAvailable ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-lg bg-muted">
-                      <p className="text-xs text-muted-foreground mb-1">Total ventas</p>
-                      <p className="text-2xl font-bold">{formatCLP(ventas.totalVentas)}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Ventas totales {new Date().getFullYear()}</p>
+                      <p className="text-2xl font-bold">{formatCLP(yearTotal.ventas)}</p>
                     </div>
                     <div className="p-4 rounded-lg bg-muted">
                       <p className="text-xs text-muted-foreground mb-1">Unidades vendidas</p>
-                      <p className="text-2xl font-bold">{ventas.totalUnidades.toLocaleString('es-CL')}</p>
+                      <p className="text-2xl font-bold">{yearTotal.unidades.toLocaleString('es-CL')}</p>
                     </div>
                   </div>
-                  {ventas.byMonth && ventas.byMonth.length > 0 && (
+
+                  {monthlyUnits.length > 0 ? (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-3">Por mes</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-3">Unidades por mes</p>
                       <div className="space-y-2">
-                        {ventas.byMonth.map((m, i) => (
+                        {monthlyUnits.map((m, i) => (
                           <div key={i} className="flex items-center gap-3 text-xs">
-                            <span className="w-24 text-muted-foreground shrink-0">{m['order_id.date_order']}</span>
-                            <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                            <span className="w-20 text-muted-foreground shrink-0 capitalize">{m.month}</span>
+                            <div className="flex-1 bg-muted rounded-full h-5 overflow-hidden">
                               <div
-                                className="h-full bg-primary rounded-full"
-                                style={{ width: `${Math.min(100, (m.price_subtotal / ventas.totalVentas) * 100)}%` }}
-                              />
+                                className="h-full bg-primary/80 rounded-full flex items-center justify-end pr-2"
+                                style={{ width: `${Math.max(4, (m.units / maxMonthUnits) * 100)}%` }}
+                              >
+                                <span className="text-[10px] text-primary-foreground font-medium tabular-nums">
+                                  {m.units.toLocaleString('es-CL')}
+                                </span>
+                              </div>
                             </div>
-                            <span className="w-28 text-right tabular-nums">{formatCLP(m.price_subtotal)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Sin datos mensuales disponibles
+                    </p>
                   )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  {brand.odooConnected ? (
-                    <>
-                      <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-3" />
-                      <p className="text-sm font-medium">Odoo conectado — cargando datos</p>
-                      <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                        {ventas?.error ? `Error: ${ventas.error}` : 'Sin ventas en el período.'}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <PlugZap className="h-10 w-10 text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium text-muted-foreground">Sin conexión a Odoo</p>
-                    </>
-                  )}
+                  <PlugZap className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">Sin conexión a Odoo</p>
                 </div>
               )}
             </CardContent>
@@ -339,7 +302,7 @@ export default async function BrandPage({ params }: PageProps) {
                 <Target className="h-10 w-10 text-muted-foreground mb-3" />
                 <p className="text-sm font-medium text-muted-foreground">Plan de seguimiento pendiente</p>
                 <div className="mt-6 space-y-2 w-full max-w-sm text-left">
-                  {["Diagnóstico actual", "Definir nivel objetivo", "Establecer milestones", "Asignar responsables"].map((step, i) => (
+                  {['Diagnóstico actual', 'Definir nivel objetivo', 'Establecer milestones', 'Asignar responsables'].map((step, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center text-[10px] shrink-0">{i + 1}</div>
                       {step}
@@ -354,7 +317,7 @@ export default async function BrandPage({ params }: PageProps) {
         {/* AUDITORÍAS */}
         <TabsContent value="auditorias">
           <div className="grid grid-cols-2 gap-4">
-            {["digital", "producto", "financiero", "operacional"].map((type) => (
+            {['digital', 'producto', 'financiero', 'operacional'].map((type) => (
               <Card key={type} className="border-0 shadow-sm">
                 <CardContent className="pt-5">
                   <div className="flex items-start justify-between mb-3">
