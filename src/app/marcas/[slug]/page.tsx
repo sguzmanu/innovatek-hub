@@ -59,14 +59,8 @@ export default async function BrandPage({ params }: PageProps) {
     }
   }
 
-  // Group products by Odoo category
-  const byCategory: Record<string, typeof products> = {}
-  for (const p of products) {
-    const cat = p.categ_id?.[1] ?? 'Sin categoría'
-    if (!byCategory[cat]) byCategory[cat] = []
-    byCategory[cat].push(p)
-  }
-
+  const sortedProducts = [...products].sort((a, b) => b.unidadesAnio - a.unidadesAnio)
+  const categoryCount = new Set(products.map(p => p.categ_id?.[1] ?? 'Sin categoría')).size
   const maxMonthUnits = Math.max(...monthlyUnits.map(m => m.units), 1)
 
   return (
@@ -109,7 +103,7 @@ export default async function BrandPage({ params }: PageProps) {
             <p className="text-xs text-muted-foreground mb-1">SKUs activos</p>
             <p className="text-2xl font-semibold">{odooAvailable ? products.length : '—'}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {odooAvailable ? `${Object.keys(byCategory).length} categorías` : 'Sin datos Odoo'}
+              {odooAvailable ? `${categoryCount} categorías` : 'Sin datos Odoo'}
             </p>
           </CardContent>
         </Card>
@@ -154,59 +148,53 @@ export default async function BrandPage({ params }: PageProps) {
 
         {/* PRODUCTOS */}
         <TabsContent value="productos">
-          {odooAvailable && products.length > 0 ? (
-            <div className="space-y-4">
-              {Object.entries(byCategory).map(([cat, prods]) => (
-                <Card key={cat} className="border-0 shadow-sm">
-                  <CardHeader className="pb-2 pt-4">
-                    <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                      <span>{cat}</span>
-                      <Badge variant="secondary" className="text-[10px]">{prods.length} SKUs</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-border text-muted-foreground">
-                            <th className="text-left pb-2 pr-4 font-medium">Producto</th>
-                            <th className="text-left pb-2 pr-4 font-medium">SKU</th>
-                            <th className="text-right pb-2 pr-4 font-medium">Stock</th>
-                            <th className="text-right pb-2 pr-4 font-medium">Und. mes</th>
-                            <th className="text-right pb-2 font-medium">Und. año</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {prods.map((p) => (
-                            <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                              <td className="py-1.5 pr-4 font-medium">{p.name}</td>
-                              <td className="py-1.5 pr-4 text-muted-foreground font-mono text-[11px]">
-                                {p.default_code || '—'}
-                              </td>
-                              <td className={`py-1.5 pr-4 text-right tabular-nums font-medium ${
-                                p.qty_available <= 0 ? 'text-red-500' : p.qty_available < 5 ? 'text-amber-500' : 'text-emerald-600'
-                              }`}>
-                                {p.qty_available.toLocaleString('es-CL')}
-                              </td>
-                              <td className="py-1.5 pr-4 text-right tabular-nums font-semibold">
-                                {p.unidadesMes > 0
-                                  ? p.unidadesMes.toLocaleString('es-CL')
-                                  : <span className="text-muted-foreground/40">0</span>}
-                              </td>
-                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">
-                                {p.unidadesAnio > 0
-                                  ? p.unidadesAnio.toLocaleString('es-CL')
-                                  : <span className="text-muted-foreground/40">0</span>}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          {odooAvailable && sortedProducts.length > 0 ? (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="text-left pb-2 pr-4 font-medium">Producto</th>
+                        <th className="text-left pb-2 pr-4 font-medium">Categoría</th>
+                        <th className="text-left pb-2 pr-4 font-medium">SKU</th>
+                        <th className="text-right pb-2 pr-4 font-medium">Stock</th>
+                        <th className="text-right pb-2 pr-4 font-medium">Und. mes</th>
+                        <th className="text-right pb-2 font-medium">Und. año ↓</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedProducts.map((p) => (
+                        <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                          <td className="py-1.5 pr-4 font-medium">{p.name}</td>
+                          <td className="py-1.5 pr-4 text-muted-foreground">
+                            {p.categ_id?.[1] ?? '—'}
+                          </td>
+                          <td className="py-1.5 pr-4 text-muted-foreground font-mono text-[11px]">
+                            {p.default_code || '—'}
+                          </td>
+                          <td className={`py-1.5 pr-4 text-right tabular-nums font-medium ${
+                            p.qty_available <= 0 ? 'text-red-500' : p.qty_available < 5 ? 'text-amber-500' : 'text-emerald-600'
+                          }`}>
+                            {p.qty_available.toLocaleString('es-CL')}
+                          </td>
+                          <td className="py-1.5 pr-4 text-right tabular-nums font-semibold">
+                            {p.unidadesMes > 0
+                              ? p.unidadesMes.toLocaleString('es-CL')
+                              : <span className="text-muted-foreground/40">0</span>}
+                          </td>
+                          <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                            {p.unidadesAnio > 0
+                              ? p.unidadesAnio.toLocaleString('es-CL')
+                              : <span className="text-muted-foreground/40">0</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <Card className="border-0 shadow-sm">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
