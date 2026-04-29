@@ -9,9 +9,9 @@ import { PlugZap, FileText, Target, ClipboardCheck, TrendingUp, AlertCircle, Che
 import type { Brand } from "@/lib/types"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { BRAND_ID, BRAND_CATEGORY } from "@/lib/odoo"
+import { BRAND_ID, BRAND_CATEGORY, odooSearchRead, odooReadGroup, currentYearStart } from "@/lib/odoo"
 
-export const revalidate = 3600
+export const revalidate = 1800
 
 const healthColors: Record<string, string> = {
   excelente: "text-emerald-600",
@@ -51,21 +51,31 @@ async function fetchOdooData(slug: string): Promise<{
   ventas: VentasData | null
   odooAvailable: boolean
 }> {
-  const base = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000'
-
+  const brandId = BRAND_ID[slug]
   try {
-    const [productosRes, ventasRes] = await Promise.all([
-      fetch(`${base}/api/odoo/productos?slug=${slug}`, { cache: 'no-store' }),
-      fetch(`${base}/api/odoo/ventas?slug=${slug}`, { cache: 'no-store' }),
+    const [productos, ventasResult] = await Promise.all([
+      odooSearchRead(
+        'product.template',
+        [['active', '=', true], ['brand_id', '=', brandId], ['sale_ok', '=', true]],
+        ['id', 'name', 'default_code', 'categ_id', 'list_price', 'qty_available', 'type'],
+        { limit: 500, order: 'categ_id asc, name asc' }
+      ),
+      odooReadGroup(
+        'sale.order.line',
+        [
+          ['order_id.state', 'in', ['sale', 'done']],
+          ['order_id.date_order', '>=', currentYearStart()],
+          ['product_id.product_tmpl_id.brand_id', '=', brandId],
+        ],
+        ['price_subtotal:sum', 'product_uom_qty:sum'],
+        []
+      ),
     ])
-    const productosData = await productosRes.json()
-    const ventasData = await ventasRes.json()
+    const row = ventasResult?.[0] ?? {}
     return {
-      productos: productosData.products ?? [],
-      ventas: ventasData,
-      odooAvailable: !productosData.error,
+      productos: productos ?? [],
+      ventas: { totalVentas: row['price_subtotal'] ?? 0, totalUnidades: row['product_uom_qty'] ?? 0 },
+      odooAvailable: true,
     }
   } catch {
     return { productos: [], ventas: null, odooAvailable: false }

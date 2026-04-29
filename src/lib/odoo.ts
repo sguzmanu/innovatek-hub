@@ -100,5 +100,53 @@ export async function odooReadGroup(
 }
 
 export function currentYearStart() {
-  return `${new Date().getFullYear()}-01-01`
+  const y = new Date().getFullYear()
+  return `${y}-01-01`
+}
+
+export function currentMonthStart() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}-01`
+}
+
+/** Authenticate once, run N parallel callKw calls, return results array. */
+export async function odooMultiReadGroup(
+  calls: Array<{ model: string; domain: unknown[]; fields: string[]; groupby: string[] }>
+) {
+  const session = await authenticate()
+  return Promise.all(
+    calls.map(({ model, domain, fields, groupby }) =>
+      callKw(session, model, 'read_group', [domain, fields, groupby], { lazy: false })
+    )
+  )
+}
+
+/** Get month sales totals for every brand slug in one session. */
+export async function getAllBrandsMonthSales(): Promise<Record<string, { ventas: number; unidades: number }>> {
+  const monthStart = currentMonthStart()
+  const slugs = Object.keys(BRAND_ID)
+  const session = await authenticate()
+
+  const results = await Promise.all(
+    slugs.map((slug) => {
+      const domain = [
+        ['order_id.state', 'in', ['sale', 'done']],
+        ['order_id.date_order', '>=', monthStart],
+        ['product_id.product_tmpl_id.brand_id', '=', BRAND_ID[slug]],
+      ]
+      return callKw(session, 'sale.order.line', 'read_group',
+        [domain, ['price_subtotal:sum', 'product_uom_qty:sum'], []],
+        { lazy: false }
+      ).catch(() => null)
+    })
+  )
+
+  return Object.fromEntries(
+    slugs.map((slug, i) => {
+      const row = results[i]?.[0] ?? {}
+      return [slug, { ventas: row['price_subtotal'] ?? 0, unidades: row['product_uom_qty'] ?? 0 }]
+    })
+  )
 }
